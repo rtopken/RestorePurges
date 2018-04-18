@@ -163,6 +163,7 @@ namespace RestorePurges
                             Console.WriteLine(appt.Subject + " | Location: " + appt.Location + " | Start Time: " + appt.Start + " | End Time: " + appt.End);
                             appt.Move(fldCal.Id);
                             cRestoredItems++;
+                            strCalList.Add(strPurged); // this one has been moved back, so add it to the list in case there is another older one
                         }
                     }
                 }
