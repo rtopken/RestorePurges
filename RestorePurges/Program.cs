@@ -159,8 +159,28 @@ namespace RestorePurges
 
                         if (bRestore)
                         {
+                            string strStart = "";
+                            string strEnd = "";
+                            try
+                            {
+                                strStart = appt.Start.ToString();
+                            }
+                            catch
+                            {
+                                strStart = "Cannot Retrieve or Not Set.";
+                            }
+
+                            try
+                            {
+                                strEnd = appt.End.ToString();
+                            }
+                            catch
+                            {
+                                strEnd = "Cannot Retrieve or Not Set.";
+                            }
+
                             Console.WriteLine("Recovering item:");
-                            Console.WriteLine(appt.Subject + " | Location: " + appt.Location + " | Start Time: " + appt.Start + " | End Time: " + appt.End);
+                            Console.WriteLine(appt.Subject + " | Location: " + appt.Location + " | Start Time: " + strStart + " | End Time: " + strEnd);
                             appt.Move(fldCal.Id);
                             cRestoredItems++;
                             strCalList.Add(strPurged); // this one has been moved back, so add it to the list in case there is another older one
