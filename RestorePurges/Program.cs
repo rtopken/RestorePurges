@@ -22,7 +22,9 @@ namespace RestorePurges
         public static int cItems = 0;
         public static Folder fldCal = null;
         public static Folder fldPurges = null;
-        
+        public static bool bStartDate = false;
+        public static DateTime dtStartDate = DateTime.MinValue;
+
 
         static void Main(string[] args)
         {
@@ -35,6 +37,7 @@ namespace RestorePurges
             List<Item> CalItems = null;
             List<Item> PurgeItems = null;
             int cRestoredItems = 0;
+            string strStartDate = "";
 
             if (args.Length > 0)
             {
@@ -54,7 +57,20 @@ namespace RestorePurges
                             return;
                         }
                     }
-
+                    if (args[i].ToUpper() == "-S" || args[i].ToUpper() == "/S") // Choose a Start Date instead of using 24 hours
+                    {
+                        if (args[i + 1].Length > 0)
+                        {
+                            strStartDate = args[i + 1];
+                            bStartDate = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Please enter a valid Date.");
+                            ShowHelp();
+                            return;
+                        }
+                    }
                     if (args[i].ToUpper() == "-?" || args[i].ToUpper() == "/?") // display command switch help
                     {
                         ShowInfo();
@@ -63,6 +79,32 @@ namespace RestorePurges
                     }
                 }
             }
+
+            if (bStartDate)
+            {
+                try
+                {
+                    dtStartDate = DateTime.Parse(strStartDate);
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message == "String was not recognized as a valid DateTime.")
+                    {
+                        Console.WriteLine("Date Format was incorrect. Please enter a valid Date.\r\n");
+                        ShowHelp();
+                        return;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error with Entered Date. Please try again.");
+                        Console.WriteLine(ex.Message + "\r\n");
+                        ShowHelp();
+                        return;
+                    }
+                }
+            }
+
+            strStartDate = dtStartDate.ToString();
 
             ShowInfo();
 
@@ -136,7 +178,14 @@ namespace RestorePurges
             }
 
             // Get Purges items
-            Console.WriteLine("Connecting to Purges folder and retreiving purged Calendar items from the last 24 hours.");
+            if (bStartDate)
+            {
+                Console.WriteLine("Connecting to Purges folder and retreiving purged Calendar items starting from " + strStartDate + ".");
+            }
+            else
+            {
+                Console.WriteLine("Connecting to Purges folder and retreiving purged Calendar items from the last 24 hours.");
+            }
             PurgeItems = GetItems(exService, "Purges");
 
             if (PurgeItems != null)
@@ -189,7 +238,14 @@ namespace RestorePurges
                 }
                 else
                 {
-                    Console.WriteLine("There were no Calendar items sent to the Purges folder in the last 24 hours.\r\n");
+                    if (bStartDate)
+                    {
+                        Console.WriteLine("There were no Calendar items sent to the Purges folder since " + strStartDate + ".\r\n");
+                    }
+                    else
+                    {
+                        Console.WriteLine("There were no Calendar items sent to the Purges folder in the last 24 hours.\r\n");
+                    }
                 }
             }
             else
@@ -226,9 +282,10 @@ namespace RestorePurges
         public static void ShowHelp()
         {
             Console.WriteLine("Usage:");
-            Console.WriteLine("RestorePurges [-M <SMTP Address>] [-?]");
+            Console.WriteLine("RestorePurges [-M <SMTP Address>] [-S <Date M/D/Y>] [-?]");
             Console.WriteLine("");
             Console.WriteLine("-M   [Mailbox - will connect to the mailbox and perform the restore.]");
+            Console.WriteLine("-S   [Date - will use the date as a start point for searching the Purges folder.]");
             Console.WriteLine("-?   [Shows this usage information.]");
             Console.WriteLine("");
         }
@@ -245,6 +302,12 @@ namespace RestorePurges
             FindItemsResults<Item> findResults = null;
             DateTime dtNow = DateTime.Now;
             DateTime dtBack = dtNow.AddHours(-24);
+            
+            if (bStartDate) // default is 24 hours ago on the date, but the user can specify longer ago than that if they wish.
+            {
+                dtBack = dtStartDate;
+            }
+            
             SearchFilter.ContainsSubstring apptFilter = new SearchFilter.ContainsSubstring(ItemSchema.ItemClass, "IPM.Appointment");
             SearchFilter.IsGreaterThanOrEqualTo modifiedFilter = new SearchFilter.IsGreaterThanOrEqualTo(ItemSchema.LastModifiedTime, dtBack);
             SearchFilter.SearchFilterCollection multiFilter = new SearchFilter.SearchFilterCollection(LogicalOperator.And, apptFilter, modifiedFilter);
